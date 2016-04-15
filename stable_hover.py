@@ -1,10 +1,8 @@
-#!/usr/bin/python
-
 ## --- Runs on Crazyflie 2.0 ---
-#This class sends thrust commands to the crazyflie
+# **** Enabling stable hovering ******
 ### Exit using keyboard press in allowed ##
 
-#Date: 12th MArch 2016
+#Date: 11th April 2016
 
 import time
 from threading import Thread
@@ -50,39 +48,41 @@ class simpleHover:
                 command = raw_input("Set thrust (10001-60000); c quits the program and d starts in fixed torque mode:")
 
                 if (command =='c') or (command == 'C'):
-                    self.thrust = 0
-
-                    time.sleep(0.5) #To make sure that thrust is actually set to 0
-                    self._stop =  1;
-
-                    print 'Exiting main loop'
-                    time.sleep(1)
-                    self.crazyflie.close_link()
-                    break
+			self.thrust = 0
+                    	time.sleep(0.5)				 #To make sure that thrust is actually set to 0
+                    	self._stop =  1
+                    	print 'Exiting main loop'
+                    	time.sleep(1)
+                    	self.crazyflie.close_link()
+                    	break
 
                 elif (command == 'd') or (command == 'D'):
-                    self.thrust = 30000
-                    time.sleep(0.5)
+                    	self.thrust = 35000
+                    	time.sleep(1.5) # 1 works
+			#cf.param.set_value("flightmode.althold", "True")
+			#cf.commander.send_setpoint(0, 0, 0, 32767)
+			#while 1:
+			#	self.thrust = 32767
 
-                    print 'Running is constant thrust mode:' 
+                   	print 'Running is constant thrust mode:' 
 
                 elif (self.is_number(command)):
-                    self.thrust = int(command)
+                    	self.thrust = int(command)
 
-                    if self.thrust == 0:
-                        self.thrust = 0
-                    elif self.thrust <= 10000:
-                        self.thrust = 10001
-                    elif self.thrust > 60000:
-                        self.thrust == 60000
+                    	if self.thrust == 0:
+                        	self.thrust = 0
+                    	elif self.thrust <= 10000:
+                        	self.thrust = 10001
+                    	elif self.thrust > 60000:
+                        	self.thrust == 60000
 
-                    print 'Setting thrust to: %i' %(self.thrust)
+                    	print 'Setting thrust to: %i' %(self.thrust)
                  
                 else:
-                    print 'Wrong thrust value: enter a number or c to quit/ d to fixed mode '
+                    	print 'Wrong thrust value: enter a number or c to quit/ d to fixed mode '
 
             except:
-                print 'Some exception thrown!!', sys.exc_info()[0]
+                	print 'Some exception thrown!!', sys.exc_info()[0]
 
     def is_number(self, input):
         try:
@@ -97,7 +97,6 @@ class simpleHover:
     def pulse_command(self):
 
         while 1:
-            print 'in pulse_command'
             self.crazyflie.commander.send_setpoint(self.roll, self.pitch, self.yaw, self.thrust)
             #self.crazyflie.commander.send_setpoint(0,0,0,20000)
             time.sleep(0.1)
@@ -107,3 +106,4 @@ class simpleHover:
             return
 
 simpleHover()
+

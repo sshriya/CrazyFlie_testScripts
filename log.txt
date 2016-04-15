@@ -1,0 +1,3 @@
+Scanning interfaces for Crazyflies...
+Crazyflies found:
+No Crazyflies found, cannot run example
