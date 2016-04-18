@@ -14,7 +14,6 @@ from cflib.crazyflie import Crazyflie  # noqa
 
 # Only output errors from the logging framework
 logging.basicConfig(level=logging.ERROR)
-fd =open("log.txt")
 
 class LogData:
 
@@ -23,6 +22,7 @@ class LogData:
         """ Initialize and run the example with the specified link_uri """
         self.roll = self.pitch = self.yaw = 0
         self.ax = self.ay = self.az = 0
+	self.Vx = 0
         self.baro = 0
 
         # Create a Crazyflie object without specifying any cache dirs
@@ -62,26 +62,28 @@ class LogData:
         # connected, since we need to check that the variables we
         # would like to log are in the TOC.
         try:
-            self.crazyflie.log.add_config(self._lg_stab)
-            #self.crazyflie.log.add_config(self._lg_accel)
+	    
+            #self.crazyflie.log.add_config(self._lg_stab)
+           
             # This callback will receive the data
-            self._lg_stab.data_received_cb.add_callback(self._stab_log_data)
-            #self._lg_accel.data_received_cb.add_callback(self._accel_log_data)
+            #self._lg_stab.data_received_cb.add_callback(self._stab_log_data)
+          
             # This callback will be called on errors
-            self._lg_stab.error_cb.add_callback(self._stab_log_error)
-            #self._lg_accel.error_cb.add_callback(self._accel_log_error)
+            #self._lg_stab.error_cb.add_callback(self._stab_log_error)
+          
             # Start the logging
-            self._lg_stab.start()
-            #self._lg_accel.start()
+            #self._lg_stab.start()
+
+	    print "starting thread"
+	    Thread(target=self._ramp_motors).start()
+	    print Thread(target=self._odometry).start()
+           
         except KeyError as e:
             print("Could not start log configuration,"
                   "{} not found in TOC".format(str(e)))
         except AttributeError:
             print("Could not add Stabilizer log config, bad configuration.")
 
-        # Start a timer to disconnect in 10s
-        t = Timer(5, self.crazyflie.close_link)
-        #t.start()
 
     def _stab_log_error(self, logconf, msg):
         """Callback from the log API when an error occurs"""
@@ -96,6 +98,7 @@ class LogData:
         #print("[%d][%s]: %s" % (timestamp, logconf.name, data))
         #logging.info("Id={0}, Stabilizer: Roll={1:.2f}, Pitch={2:.2f}, Yaw={3:.2f}, Thrust={4:.2f}".format(ident, data["stabilizer.roll"], data["stabilizer.pitch"], data["stabilizer.yaw"], data["stabilizer.thrust"]))
         #print("[%d][%s]: %.2f" % (timestamp, logconf.name, data["stabilizer.roll"]))
+	#print "logging data"
         self.roll =  data["stabilizer.roll"]
         self.pitch =  data["stabilizer.pitch"]
         self.yaw =  data["stabilizer.yaw"]
@@ -104,9 +107,12 @@ class LogData:
         self.az =  data["acc.z"]
 	#fd.append(self.ax)
         #print "acceleration : "
-	print("ax: {} ay : {} az : {}".format(self.ax,self.ay,self.az))
+	#print("ax: {} ay : {} az : {}".format(self.ax,self.ay,self.az))
 	time.sleep(0.5)
 
+    def _odometry(self):
+	print 'odom'
+	time.sleep(0.1)
 
     def _connection_failed(self, link_uri, msg):
         """Callback when connection initial connection fails (i.e no Crazyflie
@@ -124,7 +130,6 @@ class LogData:
         print("Disconnected from %s" % link_uri)
         self.is_connected = False
 
-
 if __name__ == '__main__':
     # Initialize the low-level drivers (don't list the debug drivers)
     cflib.crtp.init_drivers(enable_debug_driver=False)
@@ -140,13 +145,5 @@ if __name__ == '__main__':
     else:
         print("No Crazyflies found, cannot run example")
 
-    # The Crazyflie lib doesn't contain anything to keep the application alive,
-    # so this is where your application should do something. In our case we
-    # are just waiting until we are disconnected.
     while le.is_connected:
- 
-       	#print "Roll, pitch and yaw values are: "
-	#print("ax: {} ay : {} az : {}".format(le.ax,le.ay,le.az))
-        #print("[%.2f], [%.2f], [%.2f]" % (le.roll, le.pitch, le.yaw))
-
         time.sleep(1)

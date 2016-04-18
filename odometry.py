@@ -22,6 +22,7 @@ class LogData:
         """ Initialize and run the example with the specified link_uri """
         self.roll = self.pitch = self.yaw = 0
         self.ax = self.ay = self.az = 0
+	self.Vx = 0
         self.baro = 0
 
         # Create a Crazyflie object without specifying any cache dirs
@@ -61,16 +62,21 @@ class LogData:
         # connected, since we need to check that the variables we
         # would like to log are in the TOC.
         try:
-            self.crazyflie.log.add_config(self._lg_stab)
+	    
+            #self.crazyflie.log.add_config(self._lg_stab)
            
             # This callback will receive the data
-            self._lg_stab.data_received_cb.add_callback(self._stab_log_data)
+            #self._lg_stab.data_received_cb.add_callback(self._stab_log_data)
           
             # This callback will be called on errors
-            self._lg_stab.error_cb.add_callback(self._stab_log_error)
+            #self._lg_stab.error_cb.add_callback(self._stab_log_error)
           
             # Start the logging
-            self._lg_stab.start()
+            #self._lg_stab.start()
+
+	    print "starting thread"
+	    Thread(target=self._odometry).start()
+	    #Thread(target=self._odometry).start()
            
         except KeyError as e:
             print("Could not start log configuration,"
@@ -92,6 +98,7 @@ class LogData:
         #print("[%d][%s]: %s" % (timestamp, logconf.name, data))
         #logging.info("Id={0}, Stabilizer: Roll={1:.2f}, Pitch={2:.2f}, Yaw={3:.2f}, Thrust={4:.2f}".format(ident, data["stabilizer.roll"], data["stabilizer.pitch"], data["stabilizer.yaw"], data["stabilizer.thrust"]))
         #print("[%d][%s]: %.2f" % (timestamp, logconf.name, data["stabilizer.roll"]))
+	#print "logging data"
         self.roll =  data["stabilizer.roll"]
         self.pitch =  data["stabilizer.pitch"]
         self.yaw =  data["stabilizer.yaw"]
@@ -100,9 +107,12 @@ class LogData:
         self.az =  data["acc.z"]
 	#fd.append(self.ax)
         #print "acceleration : "
-	print("ax: {} ay : {} az : {}".format(self.ax,self.ay,self.az))
+	#print("ax: {} ay : {} az : {}".format(self.ax,self.ay,self.az))
 	time.sleep(0.5)
 
+    def _odometry(self):
+	print 'odom'
+	time.sleep(0.1)
 
     def _connection_failed(self, link_uri, msg):
         """Callback when connection initial connection fails (i.e no Crazyflie
@@ -119,7 +129,6 @@ class LogData:
         """Callback when the Crazyflie is disconnected (called in all cases)"""
         print("Disconnected from %s" % link_uri)
         self.is_connected = False
-
 
 if __name__ == '__main__':
     # Initialize the low-level drivers (don't list the debug drivers)

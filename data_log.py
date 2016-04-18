@@ -65,19 +65,20 @@ class LogData:
         self.crazyflie.is_connected = True
 
         #create a thread that published the set points
-        Thread(target=self.pulse_command).start()
+        #Thread(target=self.pulse_command).start()
 
         # Adding the configuration 
         try:
-            self.crazyflie.log.add_config(self._lg_stab)
+            #self.crazyflie.log.add_config(self._lg_stab)
             # This callback will receive the data
-            self._lg_stab.data_received_cb.add_callback(self._stab_log_data)
+            #self._lg_stab.data_received_cb.add_callback(self._stab_log_data)
             # This callback will be called on errors
-            self._lg_stab.error_cb.add_callback(self._stab_log_error)
+            #self._lg_stab.error_cb.add_callback(self._stab_log_error)
             # Start the logging
-            self._lg_stab.start()
-
+            #self._lg_stab.start()
+	    print "yay"
             Thread(target=self.pulse_command).start()
+	    print "Hello I am out of "
 
         except KeyError as e:
             print("Could not start log configuration,"
@@ -106,6 +107,7 @@ class LogData:
         self.ay =  data["acc.y"]
         self.az =  data["acc.z"]
         #self.baro = data["baro.aslLong"]
+	print self.ax
 
 
     def _connection_failed(self, link_uri, msg):
@@ -125,12 +127,10 @@ class LogData:
         self.is_connected = False
 
     def pulse_command(self):
-
-        while 1:
-            print 'in pulse_command'
-            self.crazyflie.commander.send_setpoint(self.roll, self.pitch, self.yaw, self.thrust)
+	print 'in pulse_command'
+        self.crazyflie.commander.send_setpoint(self.roll, self.pitch, self.yaw, self.thrust)
             #self.crazyflie.commander.send_setpoint(0,0,0,20000)
-            time.sleep(0.1)
+        time.sleep(0.1)
  
    
 
