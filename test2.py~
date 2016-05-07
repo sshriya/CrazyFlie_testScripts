@@ -1,0 +1,110 @@
+
+import time
+import sys
+from threading import Thread
+import logging
+
+sys.path.append("../lib")
+import cflib  # noqa
+from cflib.crazyflie import Crazyflie  # noqa
+
+logging.basicConfig(level=logging.ERROR)
+import cflib.crtp  # noqa
+from cfclient.utils.logconfigreader import LogConfig  # noqa
+from cfclient.utils.logconfigreader import LogVariable
+from cflib.crazyflie import Crazyflie  # noqa
+
+class MotorRampExample:
+    """Example that connects to a Crazyflie and ramps the motors up/down and
+    the disconnects"""
+    thrust = 0
+    def __init__(self, link_uri):
+        """ Initialize and run the example with the specified link_uri """
+
+        self._cf = Crazyflie()
+
+        self._cf.connected.add_callback(self._connected)
+        self._cf.disconnected.add_callback(self._disconnected)
+        self._cf.connection_failed.add_callback(self._connection_failed)
+        self._cf.connection_lost.add_callback(self._connection_lost)
+
+        self._cf.open_link(link_uri)
+	#adding the logging parameter
+        print("Connecting to %s" % link_uri)
+	self._lg_stab = LogConfig(name="Logging", period_in_ms=10)
+        self._lg_stab.add_variable("stabilizer.roll", "float")
+        self._lg_stab.add_variable("stabilizer.pitch", "float")
+        self._lg_stab.add_variable("stabilizer.yaw", "float")
+        self._lg_stab.add_variable("acc.x", "float")
+        self._lg_stab.add_variable("acc.y", "float")
+        self._lg_stab.add_variable("acc.z", "float")
+
+    def _connected(self, link_uri):
+	self.thrust = 10003
+	self.crazyflie.log.add_config(self._lg_stab)
+        # This callback will receive the data
+        self._lg_stab.data_received_cb.add_callback(self._stab_log_data)
+        # This callback will be called on errors
+        #self._lg_stab.error_cb.add_callback(self._stab_log_error)
+        # Start the logging
+        self._lg_stab.start()
+        #Thread(target=self._ramp_motors).start()
+
+    def _connection_failed(self, link_uri, msg):
+        """Callback when connection initial connection fails (i.e no Crazyflie
+        at the specified address)"""
+        print("Connection to %s failed: %s" % (link_uri, msg))
+    def _stab_log_data(self, timestamp, data, logconf):
+        """Callback from the log API when data arrives"""
+        self.r =  data["stabilizer.roll"]
+        self.p =  data["stabilizer.pitch"]
+        self.y =  data["stabilizer.yaw"]
+        self.ax =  data["acc.x"]
+        self.ay =  data["acc.y"]
+        self.az =  data["acc.z"]
+        #self.baro = data["baro.aslLong"]
+	print self.ax
+
+    def _connection_lost(self, link_uri, msg):
+        """Callback when disconnected after a connection has been made (i.e
+        Crazyflie moves out of range)"""
+        print("Connection to %s lost: %s" % (link_uri, msg))
+
+    def _disconnected(self, link_uri):
+        """Callback when the Crazyflie is disconnected (called in all cases)"""
+        print("Disconnected from %s" % link_uri)
+
+    def _ramp_motors(self):
+        thrust_mult = 1
+        thrust_step = 500
+        pitch = 0
+        roll = 0
+        yawrate = 0
+
+        # Unlock startup thrust protection
+        self._cf.commander.send_setpoint(0, 0, 0, 0)
+
+        while 1:
+            self._cf.commander.send_setpoint(roll, pitch, yawrate, self.thrust)
+            time.sleep(0.1)
+      #  self._cf.commander.send_setpoint(0, 0, 0, 0)
+        # Make sure that the last packet leaves before the link is closed
+        # since the message queue is not flushed before closing
+        time.sleep(0.1)
+       # self._cf.close_link()
+
+
+if __name__ == '__main__':
+    # Initialize the low-level drivers (don't list the debug drivers)
+    cflib.crtp.init_drivers(enable_debug_driver=False)
+    # Scan for Crazyflies and use the first one found
+    print("Scanning interfaces for Crazyflies...")
+    available = cflib.crtp.scan_interfaces()
+    print("Crazyflies found:")
+    for i in available:
+        print(i[0])
+
+    if len(available) > 0:
+        le = MotorRampExample(available[0][0])
+    else:
+        print("No Crazyflies found, cannot run example")
